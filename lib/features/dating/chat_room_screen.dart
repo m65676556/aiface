@@ -27,6 +27,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
+  final Set<String> _messageIds = {};
   bool _isSending = false;
   String _lastFetchTime = DateTime.fromMillisecondsSinceEpoch(0).toIso8601String();
   Timer? _pollTimer;
@@ -53,16 +54,25 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     super.dispose();
   }
 
+  void _addMessages(List<Map<String, dynamic>> msgs) {
+    final newMsgs = msgs.where((m) {
+      final id = m['id'] as String?;
+      if (id == null) return true;
+      return _messageIds.add(id);
+    }).toList();
+    if (newMsgs.isNotEmpty) {
+      _messages.addAll(newMsgs);
+      _lastFetchTime = msgs.last['created_at'] as String;
+      _scrollToBottom();
+    }
+  }
+
   Future<void> _loadHistory() async {
     try {
       final msgs = await DatingApiService.fetchMessages(
           widget.myId, widget.theirId, _lastFetchTime);
       if (msgs.isNotEmpty && mounted) {
-        setState(() {
-          _messages.addAll(msgs);
-          _lastFetchTime = msgs.last['created_at'] as String;
-        });
-        _scrollToBottom();
+        setState(() => _addMessages(msgs));
       }
     } catch (_) {}
   }
@@ -72,11 +82,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       final msgs = await DatingApiService.fetchMessages(
           widget.myId, widget.theirId, _lastFetchTime);
       if (msgs.isNotEmpty && mounted) {
-        setState(() {
-          _messages.addAll(msgs);
-          _lastFetchTime = msgs.last['created_at'] as String;
-        });
-        _scrollToBottom();
+        setState(() => _addMessages(msgs));
       }
     } catch (_) {}
   }
@@ -90,18 +96,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
     try {
       await DatingApiService.sendMessage(widget.myId, widget.theirId, text);
-      // Optimistically add message to UI
-      final now = DateTime.now().toIso8601String();
-      setState(() {
-        _messages.add({
-          'from_id': widget.myId,
-          'to_id': widget.theirId,
-          'content': text,
-          'created_at': now,
-        });
-        _lastFetchTime = now;
-      });
-      _scrollToBottom();
+      // Poll immediately after sending to show message
+      await _poll();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
