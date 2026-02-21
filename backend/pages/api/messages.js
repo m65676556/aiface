@@ -1,7 +1,7 @@
-const { sql } = require('@vercel/postgres');
-const { randomUUID } = require('crypto');
+import { sql } from '@vercel/postgres';
+import { randomUUID } from 'crypto';
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
