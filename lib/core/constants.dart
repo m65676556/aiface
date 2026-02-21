@@ -1,6 +1,6 @@
 class AppConstants {
   static const String appName = 'AIFace';
-  static const String vercelApiUrl = 'https://your-project.vercel.app';
+  static const String vercelApiUrl = 'https://aiface-api.vercel.app';
   static const int pixelGridSize = 16;
   static const double pixelDisplaySize = 200.0;
   static const double pixelCellSize = pixelDisplaySize / pixelGridSize;
